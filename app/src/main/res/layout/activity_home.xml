@@ -1,0 +1,150 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/back4"
+    android:padding="24dp">
+
+    <!-- White area of the notebook -->
+    <LinearLayout
+        android:id="@+id/notebookArea"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="40dp"
+        android:layout_marginBottom="60dp"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"
+        android:gravity="center_horizontal"
+        android:background="@android:color/transparent">
+
+        <!-- Header Section (Greeting and Menu) -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="16dp">
+
+            <!-- Profile Image + Greeting (Left Side) -->
+            <LinearLayout
+                android:id="@+id/greetingSection"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginLeft="10dp"
+                android:layout_alignParentStart="true">
+
+                <ImageView
+                    android:id="@+id/profileImage"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="8dp"
+                    android:src="@drawable/ic_profile_placeholder"
+                    android:contentDescription="Profile Image" />
+
+                <TextView
+                    android:id="@+id/greetingText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/alkatra_medium"
+                    android:text="Hi, Krista!"
+                    android:textColor="#333333"
+                    android:textSize="20sp" />
+            </LinearLayout>
+
+            <!-- Burger Menu Icon (Right Side) -->
+            <ImageButton
+                android:id="@+id/menuButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentEnd="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/burger"
+                android:contentDescription="Menu Button" />
+        </RelativeLayout>
+
+        <!-- Upload Notes Button -->
+        <ImageButton
+            android:id="@+id/uploadButton"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginBottom="20dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Upload Notes"
+            android:layout_gravity="center"
+            android:layout_marginLeft="10dp"
+            android:src="@drawable/document" />
+
+        <!-- File Name Label -->
+        <TextView
+            android:id="@+id/tvFileName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/adamina"
+            android:text="Upload file here"
+            android:textColor="#333333"
+            android:textSize="18sp"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Choose a format label -->
+        <TextView
+            android:id="@+id/chooseMethodText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/autour_one"
+            android:text="Choose a format:"
+            android:textColor="#1C1C1C"
+            android:textSize="18sp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Note-taking methods (scrollable) -->
+        <ScrollView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingBottom="16dp">
+
+                <!-- Cornell Method Button -->
+                <ImageButton
+                    android:id="@+id/cornellMethodButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:src="@drawable/cornell"
+                    android:contentDescription="Cornell Method"
+                    android:scaleType="fitCenter"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/rounded_button" />
+
+                <!-- Outline Method Button -->
+                <ImageButton
+                    android:id="@+id/outlineMethodButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:src="@drawable/outline"
+                    android:contentDescription="Outline Method"
+                    android:scaleType="fitCenter"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/rounded_button" />
+
+                <!-- Mind Map Button -->
+                <ImageButton
+                    android:id="@+id/mindMapButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:src="@drawable/mind_map"
+                    android:scaleType="fitCenter"
+                    android:contentDescription="Mind Map"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/rounded_button" />
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+</RelativeLayout>
