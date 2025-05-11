@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/scrollView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:id="@+id/rootLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <!-- Header -->
+        <TextView
+            android:id="@+id/textUploadHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:layout_marginTop="10dp"
+            android:fontFamily="@font/carrois_gothic"
+            android:text="Upload Your Note Here"
+            android:textColor="@color/text_dark"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- Upload Icon (Lottie Animation) -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/imageUploadIcon"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            android:layout_marginTop="30dp"
+            app:lottie_rawRes="@raw/upload_file"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            android:contentDescription="Upload Icon"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Hint Text Below Upload Icon -->
+        <TextView
+            android:id="@+id/textUploadHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:fontFamily="casual"
+            android:text="Tap the icon to upload your file"
+            android:textColor="@color/text_dark"
+            android:textSize="14sp" />
+
+        <!-- Lottie Loading Animation (Initially Hidden) -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/loadingAnimation"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            app:lottie_rawRes="@raw/loading1"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            android:visibility="gone"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Uploaded File Preview (initially hidden) -->
+        <ImageView
+            android:id="@+id/filePreviewIcon"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/check"
+            android:contentDescription="Uploaded File"
+            android:visibility="gone"
+            android:layout_marginBottom="8dp" />
+
+        <!-- File Uploaded Message and Icon side by side -->
+        <LinearLayout
+            android:id="@+id/fileUploadedLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:visibility="gone"
+            android:layout_marginBottom="24dp">
+
+            <ImageView
+                android:id="@+id/fileUploadedIcon"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:src="@drawable/check1"
+                android:layout_marginEnd="6dp"
+                android:contentDescription="Uploaded Icon" />
+
+            <TextView
+                android:id="@+id/textSuccess"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="File uploaded successfully!"
+                android:textColor="@color/text_dark"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Select Note-Taking Method -->
+        <TextView
+            android:id="@+id/methodLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select Method"
+            android:textColor="@color/text_dark"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone" />
+
+        <!-- Method Buttons -->
+        <LinearLayout
+            android:id="@+id/methodButtonsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_marginBottom="24dp"
+            android:visibility="gone">
+
+            <ImageButton
+                android:id="@+id/buttonOutline"
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:layout_marginBottom="16dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/outline"
+                android:contentDescription="Outline Method"
+                android:elevation="0dp"
+                android:background="@drawable/rounded_button" />
+
+            <ImageButton
+                android:id="@+id/buttonCornell"
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:layout_marginBottom="16dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/cornell"
+                android:contentDescription="Cornell Method"
+                android:elevation="0dp"
+                android:background="@drawable/rounded_button" />
+
+            <ImageButton
+                android:id="@+id/buttonMindMap"
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/mind_map"
+                android:contentDescription="Mind Map Method"
+                android:elevation="0dp"
+                android:background="@drawable/rounded_button" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

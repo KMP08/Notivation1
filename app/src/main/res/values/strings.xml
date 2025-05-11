@@ -2,4 +2,99 @@
     <string name="app_name">Notivation</string>
     <string name="default_web_client_id">531459629929-m59j452f93oi4a9n5hkqci9frpimhcbp.apps.googleusercontent.com</string>
 
+    <string name="privacy_policy_text">
+     Privacy Policy\n\n
+
+        This privacy policy applies to the Notivation app ("Application") for mobile devices developed by Krista Mae Pabellon ("Service Provider") as a free service. This service is intended for use AS IS.\n\n
+
+        Information Collection and Use\n
+        The Application may collect information such as:
+        • Your device’s Internet Protocol (IP) address
+        • Pages visited and time spent in the app
+        • Operating system used\n\n
+
+        The Application does not collect precise location data.\n\n
+
+        The Service Provider may use this data to provide important updates or improve the app’s functionality.\n\n
+
+        Personal Information\n\n
+        The Application may request personally identifiable information, such as name and email. This data is retained and used as described in this policy.
+
+        Third-Party Services\n\n
+        The app uses third-party services that may collect information. These include:
+        • Google Play Services
+        • Google Analytics for Firebase\n\n
+
+        Please refer to their respective privacy policies.\n\n
+
+        Data Sharing
+        Your data may be shared:
+        • When required by law
+        • To protect rights, safety, or investigate fraud
+        • With trusted partners who comply with this policy\n\n
+
+        Opt-Out\n\n
+        You can stop all information collection by uninstalling the app.
+
+        Data Retention\n\n
+        User data is kept as long as the app is used and for a reasonable time afterward. You may request deletion via email: kristamaepabellon8@gmail.com.
+
+        Children\n\n
+        The Application is not intended for children under 13. If such data is accidentally collected, it will be deleted immediately. Parents may contact the Service Provider for assistance.
+
+        Security\n\n
+        The Service Provider prioritizes the security of your data using reasonable safeguards.
+
+        Changes\n\n
+        This Privacy Policy may be updated from time to time. Continued use of the app constitutes agreement to the updated policy.
+
+        Contact\n\n
+        If you have questions, contact kristamaepabellon8@gmail.com.\n\n
+
+        Effective date: 2025-04-20
+    ]></string>
+
+    <string name="terms_conditions_text">
+    These Terms and Conditions apply to the Notivation app (hereby referred to as "Application") provided by Krista Mae Pabellon (hereby referred to as "Service Provider"). By using the Application, you agree to be bound by these terms.
+
+    \n\n1. Use of the Application
+    \nYou agree to use the Application only for lawful purposes and in a way that does not infringe the rights of others.
+
+    \n\n2. Intellectual Property
+    \nAll content provided in the Application is the property of the Service Provider and is protected by applicable copyright laws.
+
+    \n\n3. Limitation of Liability
+    \nThe Service Provider is not responsible for any damages or losses resulting from the use of the Application.
+
+    \n\n4. Third-Party Services
+    \nThe Application may use third-party services. You acknowledge and agree that the Service Provider is not responsible for the content or policies of those services.
+
+    \n\n5. Termination
+    \nThe Service Provider may terminate or suspend access to the Application without prior notice if you violate these Terms.
+
+    \n\n6. Changes
+    \nThese Terms and Conditions may be updated from time to time. Continued use of the Application after changes means you accept the new Terms.
+
+    \n\nEffective Date: April 20, 2025
+</string>
+    <string name="about_app_text">
+    Notivation is a minimalist and aesthetic note-taking app designed to help students take smarter notes using AI-powered formatting methods like Cornell, Outline, and Mind Map.
+
+    \n\nDeveloped by Krista Mae Pabellon, Notivation allows you to upload notes, process them using AI, and save them as PDF or DOCX files — all while keeping your interface clean and simple.
+
+    \n\nKey Features:
+    \n• Upload and process your notes with AI
+    \n• Choose your preferred format: Cornell, Outline, Mind Map
+    \n• Save notes as PDF or DOCX
+    \n• View and manage your saved notes
+
+    \n\nVersion: 1.0.0
+    \nRelease Date: April 2025
+
+    \n\nFor inquiries or feedback, contact us at:
+    \nkristamaepabellon8@gmail.com
+</string>
+
+
 </resources>
+

@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Map Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            touch-action: manipulation;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #container {
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #mindmap {
+            background-color: white;
+            padding: 20px; /* Added padding to prevent nodes from being cut off */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 0;
+            overflow: visible; /* Changed to visible to prevent content from being cut off */
+            width: 100%;
+            flex: 1; /* Take up all available space */
+            touch-action: pan-x pan-y;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #mindmap svg {
+            width: 100% !important;
+            height: auto !important;
+            display: block;
+            margin: 0 auto;
+            overflow: visible !important; /* Ensure SVG content isn't cut off */
+        }
+        /* Style for nodes to make them more mobile-friendly */
+        .node rect, .node circle, .node ellipse, .node polygon, .node path {
+            rx: 15px;
+            ry: 15px;
+            fill: #e8f5e9;
+            stroke: #4CAF50;
+            stroke-width: 2px;
+        }
+        /* Style for node text */
+        .node text {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+        .controls {
+            position: fixed;
+            bottom: 70px; /* Increased to avoid overlap with bottom navigation */
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .node:hover {
+            filter: brightness(1.1);
+        }
+        .node rect {
+            rx: 15px;
+            ry: 15px;
+        }
+        .node rect, .node circle, .node ellipse, .node polygon {
+            fill: #e8f5e9;
+            stroke: #4CAF50;
+            stroke-width: 2px;
+        }
+        .edgePath path {
+            stroke: #4CAF50;
+            stroke-width: 2px;
+        }
+        .loading {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        .error-banner {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+        }
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            #container {
+                padding: 5px;
+            }
+            #mindmap {
+                padding: 5px;
+            }
+            .control-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+        }
+    </style>
+    <!-- Include Mermaid.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <div id="container">
+        <div id="mindmap"></div>
+        <div class="controls">
+            <button class="control-btn" id="zoom-in">+</button>
+            <button class="control-btn" id="zoom-out">-</button>
+            <button class="control-btn" id="zoom-reset">↺</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid with portrait orientation
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis',
+                rankDir: 'TD',      // Top to bottom direction (portrait orientation)
+                ranker: 'tight-tree'
+            },
+            securityLevel: 'loose'
+        });
+
+        // Variables for zoom and pan functionality
+        let currentZoom = 2.0; // Start with a high zoom level
+        const zoomStep = 0.1;
+        const minZoom = 0.3;
+        const maxZoom = 3.0;
+        let panX = 0;
+        let panY = 0;
+
+        // Flag to track if initial centering has been done
+        let initialCenteringDone = false;
+
+        // Function to render the mind map
+        function renderMindMap(content) {
+            try {
+                if (!content) {
+                    console.error('No content provided to renderMindMap');
+                    // Use a simple fallback with portrait orientation
+                    content = 'graph TD;\nA((Error)) --> B((No content));\nstyle A fill:#ffebee,stroke:#f44336,stroke-width:4px;\nstyle B fill:#ffebee,stroke:#f44336,stroke-width:3.5px;';
+                }
+
+                // Clean up the content to ensure it's valid Mermaid syntax
+                content = content.trim();
+
+                // If content doesn't start with graph or flowchart, add it with LR orientation
+                if (!content.startsWith('graph') && !content.startsWith('flowchart')) {
+                    content = 'graph TD;\n' + content;
+                }
+
+                // Force portrait orientation by replacing LR (left-right) with TD (top-down)
+                content = content.replace(/graph LR;/g, 'graph TD;')
+                               .replace(/graph LR /g, 'graph TD ')
+                               .replace(/flowchart LR/g, 'flowchart TD')
+                               .replace(/;;/g, ';')
+                               .replace(/\n\s*\n/g, '\n')
+                               .replace(/\\\(/g, '(')
+                               .replace(/\\\)/g, ')')
+                               .replace(/\\n/g, '\n')
+                               .replace(/&quot;/g, '"')
+                               .replace(/&amp;/g, '&');
+
+                // Fix lines with arrows but no semicolons
+                const lines = content.split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].includes('-->') && !lines[i].trim().endsWith(';')) {
+                        lines[i] = lines[i].trim() + ';';
+                    }
+                }
+                content = lines.join('\n');
+
+                console.log('Rendering mind map with content:', content.substring(0, 100) + '...');
+
+                // Render the mind map
+                const element = document.getElementById('mindmap');
+                if (!element) {
+                    console.error('Mind map container not found');
+                    return;
+                }
+                element.innerHTML = '<div class="loading">Rendering mind map...</div>';
+
+                try {
+                    mermaid.render('graphDiv', content)
+                        .then(result => {
+                            element.innerHTML = result.svg;
+
+                            // Get the SVG element
+                            const svg = element.querySelector('svg');
+                            if (svg) {
+                                // Make SVG responsive and prevent cutoff
+                                svg.setAttribute('width', '100%');
+                                svg.setAttribute('height', 'auto');
+                                svg.style.maxWidth = 'none';
+                                svg.style.overflow = 'visible';
+
+                                // Add padding to the viewBox if it exists
+                                if (svg.getAttribute('viewBox')) {
+                                    const viewBox = svg.getAttribute('viewBox').split(' ');
+                                    if (viewBox.length === 4) {
+                                        // Add 10% padding to each side
+                                        const x = parseFloat(viewBox[0]);
+                                        const y = parseFloat(viewBox[1]);
+                                        const width = parseFloat(viewBox[2]);
+                                        const height = parseFloat(viewBox[3]);
+
+                                        const paddingX = width * 0.1;
+                                        const paddingY = height * 0.1;
+
+                                        svg.setAttribute('viewBox',
+                                            `${x - paddingX} ${y - paddingY} ${width + paddingX * 2} ${height + paddingY * 2}`);
+                                    }
+                                }
+
+                                // Apply rounded corners to all rectangles
+                                const rects = svg.querySelectorAll('rect');
+                                rects.forEach(rect => {
+                                    rect.setAttribute('rx', '15');
+                                    rect.setAttribute('ry', '15');
+                                });
+
+                                // Simple fix for text alignment
+                                const texts = svg.querySelectorAll('.node text');
+                                texts.forEach(text => {
+                                    // Basic text alignment
+                                    text.setAttribute('text-anchor', 'middle');
+                                });
+
+                                // Start with a high zoom level - we don't need to show the full mindmap
+                                currentZoom = 2.0;
+
+                                // Add a slight delay to ensure the SVG is fully rendered
+                                setTimeout(() => {
+                                    // Optimize SVG for mobile view
+                                    optimizeSvgForMobile(svg);
+
+                                    // Make the mind map draggable
+                                    makeDraggable(svg);
+
+                                    // Hide progress bar if it exists
+                                    const progressBar = document.querySelector('.loading');
+                                    if (progressBar) {
+                                        progressBar.style.display = 'none';
+                                    }
+                                }, 300);
+                            }
+
+                            // Add click event listeners to nodes
+                            const nodes = document.querySelectorAll('.node');
+                            nodes.forEach(node => {
+                                node.addEventListener('click', function() {
+                                    const nodeId = this.id;
+                                    const nodeText = this.textContent.trim();
+                                    // Call Android interface if available
+                                    if (window.Android) {
+                                        window.Android.onNodeClicked(nodeText);
+                                    }
+                                });
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error rendering mind map:', error);
+                            // Try with a simplified version as fallback - using portrait orientation with bold lines
+                            const fallbackContent = 'graph TD;\n  A((Main Topic)) --> B((Subtopic 1));\n  A --> C((Subtopic 2));\n  style A fill:#e3f2fd,stroke:#2196F3,stroke-width:4px;\n  style B fill:#fff8e1,stroke:#FFC107,stroke-width:3.5px;\n  style C fill:#fff8e1,stroke:#FFC107,stroke-width:3.5px;\n  linkStyle 0 stroke:#2196F3,stroke-width:4px;\n  linkStyle 1 stroke:#2196F3,stroke-width:4px;';
+                            console.log('Trying fallback content:', fallbackContent);
+
+                            mermaid.render('graphDiv', fallbackContent)
+                                .then(result => {
+                                    element.innerHTML = '<div class="error-banner" style="background-color: #ffebee; color: #d32f2f; padding: 5px; margin-bottom: 10px; border-radius: 4px; font-size: 12px; text-align: center;">Simplified version shown. Try refreshing.</div>' + result.svg;
+
+                                    // Apply the same styling to the fallback SVG
+                                    const svg = element.querySelector('svg');
+                                    if (svg) {
+                                        svg.setAttribute('width', '100%');
+                                        svg.setAttribute('height', 'auto');
+                                        svg.style.maxWidth = 'none';
+                                        svg.style.overflow = 'visible';
+
+                                        // Add padding to the viewBox if it exists
+                                        if (svg.getAttribute('viewBox')) {
+                                            const viewBox = svg.getAttribute('viewBox').split(' ');
+                                            if (viewBox.length === 4) {
+                                                // Add 10% padding to each side
+                                                const x = parseFloat(viewBox[0]);
+                                                const y = parseFloat(viewBox[1]);
+                                                const width = parseFloat(viewBox[2]);
+                                                const height = parseFloat(viewBox[3]);
+
+                                                const paddingX = width * 0.1;
+                                                const paddingY = height * 0.1;
+
+                                                svg.setAttribute('viewBox',
+                                                    `${x - paddingX} ${y - paddingY} ${width + paddingX * 2} ${height + paddingY * 2}`);
+                                            }
+                                        }
+
+                                        const rects = svg.querySelectorAll('rect');
+                                        rects.forEach(rect => {
+                                            rect.setAttribute('rx', '15');
+                                            rect.setAttribute('ry', '15');
+                                        });
+
+                                        // Simple text alignment for fallback
+                                        const texts = svg.querySelectorAll('.node text');
+                                        texts.forEach(text => {
+                                            text.setAttribute('text-anchor', 'middle');
+                                        });
+
+                                        // Start with a high zoom level - we don't need to show the full mindmap
+                                        currentZoom = 2.0;
+
+                                        // Add a slight delay to ensure the SVG is fully rendered
+                                        setTimeout(() => {
+                                            // Optimize SVG for mobile view
+                                            optimizeSvgForMobile(svg);
+
+                                            // Make the mind map draggable
+                                            makeDraggable(svg);
+                                        }, 300);
+                                    }
+                                })
+                                .catch(fallbackError => {
+                                    console.error('Fallback also failed:', fallbackError);
+                                    element.innerHTML = '<p>Error rendering mind map: ' + error.message + '</p>';
+                                });
+                        });
+                } catch (renderError) {
+                    console.error('Error in mermaid.render:', renderError);
+                    element.innerHTML = '<p>Error: ' + renderError.message + '</p>';
+                }
+            } catch (error) {
+                console.error('Error in renderMindMap:', error);
+                document.getElementById('mindmap').innerHTML = '<p>Error: ' + error.message + '</p>';
+            }
+        }
+
+        // Function to receive mind map data from Android
+        function setMindMapData(data) {
+            console.log("Received mind map data:", data.substring(0, 50) + "...");
+            window.mindMapData = data; // Store the data globally
+            renderMindMap(data);
+
+            // Set a fallback timer to re-render if the mindmap doesn't appear
+            setTimeout(function() {
+                const svg = document.querySelector('#mindmap svg');
+                if (!svg || svg.getBoundingClientRect().width < 10) {
+                    console.log("Mindmap not properly rendered, trying again...");
+                    renderMindMap(data);
+                }
+            }, 1000);
+        }
+
+        // Default mind map if no data is provided
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM content loaded");
+
+            // Set up zoom controls
+            setupZoomControls();
+
+            // Check if we have data from Android
+            if (window.mindMapData) {
+                console.log("Found existing mind map data, rendering...");
+                renderMindMap(window.mindMapData);
+            } else {
+                // Simple default mind map with circular nodes in portrait orientation
+                const defaultMindMap = `
+                graph TD;
+                    A((Main Topic)) --> B((Subtopic 1));
+                    A --> C((Subtopic 2));
+                    style A fill:#e3f2fd,stroke:#2196F3,stroke-width:4px;
+                    style B fill:#fff8e1,stroke:#FFC107,stroke-width:3.5px;
+                    style C fill:#fff8e1,stroke:#FFC107,stroke-width:3.5px;
+                `;
+                console.log("Rendering default mind map");
+                renderMindMap(defaultMindMap);
+
+                // Set a timer to check if Android has sent data after a delay
+                setTimeout(function() {
+                    if (window.mindMapData) {
+                        console.log("Found delayed mind map data, re-rendering...");
+                        renderMindMap(window.mindMapData);
+                    }
+                }, 1500);
+            }
+        });
+
+        // Function to apply zoom and pan to the SVG
+        function applyZoom() {
+            const svg = document.querySelector('#mindmap svg');
+            if (svg) {
+                svg.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+            }
+        }
+
+        // Function to optimize SVG for mobile view - improved version to prevent cutoff
+        function optimizeSvgForMobile(svg) {
+            if (!svg) return;
+
+            // Reset any existing transform
+            svg.style.transform = '';
+
+            // Use a fixed zoom level for consistency
+            currentZoom = 1.5;
+
+            // Reset pan position
+            panX = 0;
+            panY = 0;
+
+            // Apply the initial transform
+            applyZoom();
+
+            // Add custom styles to nodes based on their level
+            styleNodesByLevel(svg);
+
+            // Ensure SVG has proper overflow settings
+            svg.style.overflow = 'visible';
+
+            // Add padding to the viewBox if it exists
+            if (svg.getAttribute('viewBox')) {
+                const viewBox = svg.getAttribute('viewBox').split(' ');
+                if (viewBox.length === 4) {
+                    // Add 10% padding to each side
+                    const x = parseFloat(viewBox[0]);
+                    const y = parseFloat(viewBox[1]);
+                    const width = parseFloat(viewBox[2]);
+                    const height = parseFloat(viewBox[3]);
+
+                    const paddingX = width * 0.1;
+                    const paddingY = height * 0.1;
+
+                    svg.setAttribute('viewBox',
+                        `${x - paddingX} ${y - paddingY} ${width + paddingX * 2} ${height + paddingY * 2}`);
+                }
+            }
+
+            // Find the root node and center on it
+            const rootNode = findRootNode(svg);
+            if (rootNode) {
+                // Add a slight delay to ensure the SVG is fully rendered with the new zoom
+                setTimeout(() => {
+                    centerOnNode(rootNode);
+
+                    // Add a visual indicator to help users understand they can pan
+                    addPanIndicator();
+                }, 100);
+            }
+        }
+
+        // Function to add a temporary visual indicator that the map can be panned
+        function addPanIndicator() {
+            const container = document.getElementById('mindmap');
+            if (!container) return;
+
+            // Create indicator element with arrow icons for better visibility
+            const indicator = document.createElement('div');
+            indicator.style.position = 'absolute';
+            indicator.style.bottom = '80px';
+            indicator.style.left = '50%';
+            indicator.style.transform = 'translateX(-50%)';
+            indicator.style.backgroundColor = 'rgba(33, 150, 243, 0.9)';
+            indicator.style.color = 'white';
+            indicator.style.padding = '10px 15px';
+            indicator.style.borderRadius = '25px';
+            indicator.style.fontSize = '16px';
+            indicator.style.fontWeight = 'bold';
+            indicator.style.zIndex = '1000';
+            indicator.style.boxShadow = '0 3px 8px rgba(0,0,0,0.3)';
+            indicator.style.opacity = '1';
+            indicator.style.transition = 'opacity 0.5s ease';
+            indicator.style.textAlign = 'center';
+            indicator.style.display = 'flex';
+            indicator.style.alignItems = 'center';
+            indicator.style.justifyContent = 'center';
+            indicator.style.gap = '5px';
+
+            // Add directional arrows to indicate dragging
+            const leftArrow = document.createElement('span');
+            leftArrow.textContent = '←';
+            leftArrow.style.fontSize = '20px';
+
+            const rightArrow = document.createElement('span');
+            rightArrow.textContent = '→';
+            rightArrow.style.fontSize = '20px';
+
+            const text = document.createElement('span');
+            text.textContent = 'Drag to explore';
+
+            indicator.appendChild(leftArrow);
+            indicator.appendChild(text);
+            indicator.appendChild(rightArrow);
+
+            // Add to container
+            container.appendChild(indicator);
+
+            // Add a subtle animation to draw attention
+            let direction = 1;
+            let position = 0;
+            const animate = () => {
+                position += direction * 0.5;
+                if (position > 5 || position < -5) {
+                    direction *= -1;
+                }
+                indicator.style.transform = `translateX(calc(-50% + ${position}px))`;
+
+                if (indicator.style.opacity !== '0') {
+                    requestAnimationFrame(animate);
+                }
+            };
+            requestAnimationFrame(animate);
+
+            // Fade out after 4 seconds
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+                // Remove after fade out
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        indicator.parentNode.removeChild(indicator);
+                    }
+                }, 500);
+            }, 4000);
+        }
+
+        // Function to find the root node of the mind map
+        function findRootNode(svg) {
+            if (!svg) return null;
+
+            // Get all nodes
+            const nodes = svg.querySelectorAll('.node');
+
+            // Find the root node (usually has the most outgoing edges)
+            let rootNode = null;
+            let maxOutgoing = -1;
+
+            nodes.forEach(node => {
+                // Count outgoing edges
+                const nodeId = node.id;
+                const outgoingCount = svg.querySelectorAll(`path[d*="${nodeId}"]`).length;
+
+                if (outgoingCount > maxOutgoing) {
+                    maxOutgoing = outgoingCount;
+                    rootNode = node;
+                }
+            });
+
+            return rootNode;
+        }
+
+        // Function to center the view on a specific node - simplified version
+        function centerOnNode(node) {
+            if (!node) return;
+
+            const mindmapContainer = document.getElementById('mindmap');
+            if (!mindmapContainer) return;
+
+            try {
+                // Get the node's position
+                const nodeRect = node.getBoundingClientRect();
+                const containerRect = mindmapContainer.getBoundingClientRect();
+
+                // Calculate the center position
+                const centerX = nodeRect.left + nodeRect.width / 2;
+                const centerY = nodeRect.top + nodeRect.height / 2;
+
+                // Calculate the container center
+                const containerCenterX = containerRect.left + containerRect.width / 2;
+                const containerCenterY = containerRect.top + containerRect.height / 2;
+
+                // Calculate the pan values to center the node
+                panX = (containerCenterX - centerX) / currentZoom;
+                panY = (containerCenterY - centerY) / currentZoom;
+
+                // Apply the pan
+                applyZoom();
+            } catch (e) {
+                console.error("Error in centerOnNode:", e);
+            }
+        }
+
+        // Function to style nodes based on their level in the hierarchy
+        function styleNodesByLevel(svg) {
+            if (!svg) return;
+
+            // Get all nodes
+            const nodes = svg.querySelectorAll('.node');
+
+            // Map to store node levels
+            const nodeLevels = new Map();
+
+            // Find the root node
+            const rootNode = findRootNode(svg);
+
+            // Initialize all nodes at level 999 (unknown)
+            nodes.forEach(node => {
+                nodeLevels.set(node.id, 999);
+            });
+
+            // If we found a root node, set its level to 0
+            if (rootNode) {
+                nodeLevels.set(rootNode.id, 0);
+
+                // Style the root node - make it more circular with bolder stroke
+                const rootShape = rootNode.querySelector('rect, circle, ellipse, polygon, path');
+                if (rootShape) {
+                    // If it's a rectangle, make it more circular with high rx/ry values
+                    if (rootShape.tagName.toLowerCase() === 'rect') {
+                        rootShape.setAttribute('rx', '25');
+                        rootShape.setAttribute('ry', '25');
+                    }
+                    rootShape.setAttribute('fill', '#e3f2fd');
+                    rootShape.setAttribute('stroke', '#2196F3');
+                    rootShape.setAttribute('stroke-width', '4');
+                }
+
+                // Recursively assign levels to connected nodes
+                assignLevels(rootNode, 1, nodeLevels, svg);
+            }
+
+            // Apply styles based on levels
+            nodes.forEach(node => {
+                const level = nodeLevels.get(node.id);
+                if (level === 999) return; // Skip nodes with unknown level
+
+                const shape = node.querySelector('rect, circle, ellipse, polygon, path');
+                if (!shape) return;
+
+                // Make all rectangles more rounded/oblong - even more circular
+                if (shape.tagName.toLowerCase() === 'rect') {
+                    // Higher rx/ry values for more rounded corners
+                    shape.setAttribute('rx', '20');
+                    shape.setAttribute('ry', '20');
+                }
+
+                // Style based on level with more dynamic colors and bolder strokes
+                if (level === 1) {
+                    // Level 1 nodes (direct children of root)
+                    shape.setAttribute('fill', '#fff8e1');
+                    shape.setAttribute('stroke', '#FFC107');
+                    shape.setAttribute('stroke-width', '3.5');
+                } else if (level === 2) {
+                    // Level 2 nodes
+                    shape.setAttribute('fill', '#f3e5f5');
+                    shape.setAttribute('stroke', '#9C27B0');
+                    shape.setAttribute('stroke-width', '3');
+                } else if (level >= 3) {
+                    // Level 3+ nodes - vary the colors slightly based on position
+                    const nodeIndex = Array.from(nodes).indexOf(node);
+                    const colors = ['#e8f5e9', '#e0f7fa', '#f1f8e9', '#e8eaf6'];
+                    const strokes = ['#4CAF50', '#00BCD4', '#8BC34A', '#3F51B5'];
+                    const colorIndex = nodeIndex % colors.length;
+
+                    shape.setAttribute('fill', colors[colorIndex]);
+                    shape.setAttribute('stroke', strokes[colorIndex]);
+                    shape.setAttribute('stroke-width', '3');
+                }
+            });
+
+            // Style the edges (lines) to make them more dynamic
+            styleEdges(svg, nodeLevels);
+        }
+
+        // Function to style edges with dynamic line styles
+        function styleEdges(svg, nodeLevels) {
+            if (!svg) return;
+
+            // Get all edge paths
+            const edgePaths = svg.querySelectorAll('.edgePath path');
+
+            edgePaths.forEach(path => {
+                // Get the source and target node IDs from the path
+                const edgeElement = path.closest('.edgePath');
+                if (!edgeElement) return;
+
+                // Extract source and target from class names
+                const classes = edgeElement.getAttribute('class');
+                const sourceTargetMatch = classes.match(/LS-([^ ]+) LE-([^ ]+)/);
+
+                if (sourceTargetMatch && sourceTargetMatch.length >= 3) {
+                    const sourceId = sourceTargetMatch[1];
+                    const targetId = sourceTargetMatch[2];
+
+                    // Get the levels of source and target nodes
+                    const sourceLevel = nodeLevels.get(sourceId) || 999;
+                    const targetLevel = nodeLevels.get(targetId) || 999;
+
+                    // Style based on the level difference
+                    const levelDiff = Math.abs(targetLevel - sourceLevel);
+
+                    // Make all lines bolder - use higher stroke width values
+                    // This creates the simplified bold look you prefer
+                    let strokeWidth;
+                    if (sourceLevel === 0) {
+                        // Lines from root are the boldest
+                        strokeWidth = 4;
+                    } else if (sourceLevel === 1) {
+                        // Lines from level 1 nodes
+                        strokeWidth = 3.5;
+                    } else {
+                        // Lines from deeper levels
+                        strokeWidth = 3;
+                    }
+                    path.setAttribute('stroke-width', strokeWidth);
+
+                    // Make lines straighter with less curve variation
+                    // This creates a more simplified, clean look
+                    const pathData = path.getAttribute('d');
+                    if (pathData && pathData.includes('C')) {
+                        // Straighten the path slightly by reducing curve intensity
+                        path.setAttribute('d', pathData.replace(/C ([0-9.-]+) ([0-9.-]+)/g,
+                            (match, x, y) => {
+                                // Adjust control points to make lines straighter
+                                const adjustedX = parseFloat(x) * 0.8;
+                                const adjustedY = parseFloat(y) * 0.8;
+                                return `C ${adjustedX} ${adjustedY}`;
+                            }));
+                    }
+
+                    // Add some color variation based on the levels
+                    if (sourceLevel === 0) {
+                        // Lines from root
+                        path.setAttribute('stroke', '#2196F3');
+                    } else if (sourceLevel === 1) {
+                        // Lines from level 1
+                        path.setAttribute('stroke', '#FFC107');
+                    } else if (sourceLevel === 2) {
+                        // Lines from level 2
+                        path.setAttribute('stroke', '#9C27B0');
+                    } else {
+                        // Lines from deeper levels
+                        const colors = ['#4CAF50', '#00BCD4', '#8BC34A', '#3F51B5'];
+                        path.setAttribute('stroke', colors[sourceLevel % colors.length]);
+                    }
+                }
+            });
+        }
+
+        // Function to recursively assign levels to nodes
+        function assignLevels(node, level, nodeLevels, svg) {
+            // Get all edges from this node
+            const nodeId = node.id;
+            const edges = svg.querySelectorAll(`path[d*="${nodeId}"]`);
+
+            edges.forEach(edge => {
+                // Get the edge's path data
+                const pathData = edge.getAttribute('d');
+
+                // Extract the target node ID from the path data
+                // This is a simplification and might need adjustment based on actual path format
+                const matches = pathData.match(/L.*?([A-Za-z0-9]+)/);
+                if (matches && matches[1] && matches[1] !== nodeId) {
+                    const targetId = matches[1];
+                    const targetNode = svg.querySelector(`#${targetId}`);
+
+                    if (targetNode) {
+                        // Only update if the new level is lower than the current one
+                        const currentLevel = nodeLevels.get(targetId);
+                        if (level < currentLevel) {
+                            nodeLevels.set(targetId, level);
+                            assignLevels(targetNode, level + 1, nodeLevels, svg);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to make the SVG draggable
+        function makeDraggable(svg) {
+            let isDragging = false;
+            let startX, startY;
+            let startPanX = panX;
+            let startPanY = panY;
+
+            // Mouse events for desktop
+            svg.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+
+            // Touch events for mobile
+            svg.addEventListener('touchstart', startDragTouch);
+            document.addEventListener('touchmove', dragTouch);
+            document.addEventListener('touchend', endDrag);
+
+            function startDrag(e) {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                startPanX = panX;
+                startPanY = panY;
+                svg.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+
+            function startDragTouch(e) {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    startPanX = panX;
+                    startPanY = panY;
+                    e.preventDefault();
+                }
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                panX = startPanX + (e.clientX - startX);
+                panY = startPanY + (e.clientY - startY);
+                applyZoom();
+                e.preventDefault();
+            }
+
+            function dragTouch(e) {
+                if (!isDragging || e.touches.length !== 1) return;
+                panX = startPanX + (e.touches[0].clientX - startX);
+                panY = startPanY + (e.touches[0].clientY - startY);
+                applyZoom();
+                e.preventDefault();
+            }
+
+            function endDrag() {
+                isDragging = false;
+                svg.style.cursor = 'grab';
+            }
+        }
+
+        // Function to set up zoom controls
+        function setupZoomControls() {
+            const zoomIn = document.getElementById('zoom-in');
+            const zoomOut = document.getElementById('zoom-out');
+            const zoomReset = document.getElementById('zoom-reset');
+
+            if (zoomIn) {
+                zoomIn.addEventListener('click', function() {
+                    if (currentZoom < maxZoom) {
+                        currentZoom += zoomStep;
+                        applyZoom();
+                    }
+                });
+            }
+
+            if (zoomOut) {
+                zoomOut.addEventListener('click', function() {
+                    if (currentZoom > minZoom) {
+                        currentZoom -= zoomStep;
+                        applyZoom();
+                    }
+                });
+            }
+
+            if (zoomReset) {
+                zoomReset.addEventListener('click', function() {
+                    // Reset pan position
+                    panX = 0;
+                    panY = 0;
+
+                    // Set to our preferred zoom level - high zoom to focus on details
+                    currentZoom = 2.0;
+
+                    // Apply zoom
+                    applyZoom();
+
+                    // Center the view on the root node if possible
+                    const svg = document.querySelector('#mindmap svg');
+                    if (svg) {
+                        const rootNode = findRootNode(svg);
+                        if (rootNode) {
+                            centerOnNode(rootNode);
+                        } else {
+                            // If no root node found, just optimize for mobile
+                            optimizeSvgForMobile(svg);
+                        }
+                    }
+                });
+            }
+
+            // Add pinch zoom support for mobile
+            const mindmap = document.getElementById('mindmap');
+            if (mindmap) {
+                let initialDistance = 0;
+                let initialZoom = 1;
+
+                mindmap.addEventListener('touchstart', function(e) {
+                    if (e.touches.length === 2) {
+                        initialDistance = Math.hypot(
+                            e.touches[0].pageX - e.touches[1].pageX,
+                            e.touches[0].pageY - e.touches[1].pageY
+                        );
+                        initialZoom = currentZoom;
+                    }
+                });
+
+                mindmap.addEventListener('touchmove', function(e) {
+                    if (e.touches.length === 2) {
+                        e.preventDefault();
+
+                        const currentDistance = Math.hypot(
+                            e.touches[0].pageX - e.touches[1].pageX,
+                            e.touches[0].pageY - e.touches[1].pageY
+                        );
+
+                        const scale = currentDistance / initialDistance;
+                        currentZoom = Math.min(Math.max(initialZoom * scale, minZoom), maxZoom);
+
+                        applyZoom();
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
